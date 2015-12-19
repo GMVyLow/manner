@@ -10,6 +10,9 @@
 #include "../common/mapindex.h"
 #include "../common/db.h"
 #include "../common/msg_conf.h"
+#ifdef PCRE_SUPPORT
+#include "../../3rdparty/pcre/include/pcre.h"
+#endif
 
 #include "../config/core.h"
 
@@ -752,6 +755,31 @@ struct map_data_other_server {
 	uint32 ip;
 	uint16 port;
 };
+
+#ifdef PCRE_SUPPORT
+#ifndef MANNER_SYSTEM_GUARD
+#define MANNER_SYSTEM_GUARD
+struct manner_pcre {
+	pcre *regex;
+	pcre_extra *extra;
+};
+
+struct manner_config {
+	int min_gm_level;
+	int mute_after;
+	int mute_time;
+	char bypass_var[64];
+};
+
+extern struct manner_pcre *mannerlist;
+extern struct manner_config manner_config;
+extern unsigned int mannersize;
+
+bool read_manner(const char* confpath);
+bool read_manner_config(const char* confpath);
+void clean_manner(void);
+#endif
+#endif
 
 int map_getcell(int16 m,int16 x,int16 y,cell_chk cellchk);
 int map_getcellp(struct map_data* m,int16 x,int16 y,cell_chk cellchk);

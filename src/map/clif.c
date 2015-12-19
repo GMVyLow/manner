@@ -9767,10 +9767,11 @@ void clif_msg_skill(struct map_session_data* sd, uint16 skill_id, int msg_id)
 ///          1 - <packet id>.w <packet len>.w <name>.24B <message>.?B 00
 static bool clif_process_message(struct map_session_data* sd, int format, char** name_, int* namelen_, char** message_, int* messagelen_)
 {
-	char *text, *name, *message;
+	char *text, *name, *message, output[254];
 	unsigned int packetlen, textlen, namelen, messagelen;
 	int fd = sd->fd;
 	struct s_packet_db* info = &packet_db[sd->packet_ver][RFIFOW(fd,0)];
+	int i;
 
 	*name_ = NULL;
 	*namelen_ = 0;
@@ -9848,6 +9849,25 @@ static bool clif_process_message(struct map_session_data* sd, int format, char**
 		// but we'll only allow reasonably long strings here. This also makes sure that they fit into the `chatlog` table.
 		ShowWarning("clif_process_message: Player '%s' sent a message too long ('%.*s')!\n", sd->status.name, CHAT_SIZE_MAX-1, message);
 		return false;
+	}
+
+	if (!pc_has_permission(sd, PC_PERM_BYBASS_CHAT) && !pc_readglobalreg(sd,manner_config.bypass_var) && !(sd->sc.data && sd->sc.data[SC_NOCHAT])) {
+		for(i = 0; i < mannersize; ++i) {
+			if(pcre_exec(mannerlist[i].regex, mannerlist[i].extra, message, (int)strlen(message), 0, 0, NULL, 0) != PCRE_ERROR_NOMATCH) {
+				sprintf(output, "Chat Filter: Yeah, uh, I don't think so, buddy...");
+				clif_messagecolor(&sd->bl, COLOR_RED, output);
+				if ( manner_config.mute_after > 0 ) {
+					if ( sd->manner.mute_times >= manner_config.mute_after ) {
+						sc_start(NULL, &sd->bl, SC_NOCHAT, 100, MANNER_NOCHAT|MANNER_NOCOMMAND|MANNER_NOITEM|MANNER_NOROOM|MANNER_NOSKILL, manner_config.mute_time * 60 * 1000);
+						clif_GM_silence(sd, sd, 1);
+						sd->manner.mute_times = 0;
+					}else{
+						++sd->manner.mute_times;
+					}
+				}
+				return false;
+			}
+		}
 	}
 
 	*name_ = name;

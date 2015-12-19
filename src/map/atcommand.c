@@ -11145,6 +11145,13 @@ ACMD_FUNC(fullstrip) {
 	return 0;
 }
 
+ACMD_FUNC(reloadmanner) {	
+	clean_manner();
+	read_manner("conf/plugin/manner.txt");
+	read_manner_config("conf/plugin/manner.conf");
+	return true;
+}
+
 #include "../custom/atcommand.inc"
 
 /**
@@ -11491,6 +11498,7 @@ void atcommand_basecommands(void) {
 		ACMD_DEF(learnlang),
 		ACMD_DEF(unlearnlang),
 		ACMD_DEF(say),
+		ACMD_DEF(reloadmanner),
 	};
 	AtCommandInfo* atcommand;
 	int i;

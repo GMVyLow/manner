@@ -132,6 +132,10 @@ int woe_set = 0; // eAmod WoE
 int pvpevent_flag = 0; // Ranking System
 int night_flag = 0; // 0=day, 1=night [Yor]
 
+struct manner_pcre *mannerlist = NULL;
+struct manner_config manner_config = {60, 0, 1, "chat_filter"};
+unsigned int mannersize = 0;
+
 struct charid_request {
 	struct charid_request* next;
 	int charid;// who want to be notified of the nick
@@ -4034,6 +4038,94 @@ const char* map_msg_txt(struct map_session_data *sd, int msg_number){
 	return "??";
 }
 
+bool read_manner(const char* confpath) {
+	FILE* fp;
+	char line[1024], param[1024];
+	const char *error = NULL;
+	int offset;
+	pcre *regex = NULL;
+	pcre_extra *extra = NULL;
+
+	fp = fopen(confpath, "r");
+	if (fp == NULL) {
+		ShowError("File not found: '%s'.\n", confpath);
+		return false;
+	}
+	while(fgets(line, sizeof(line), fp)) {
+
+		if((line[0] == '/' && line[1] == '/') || ( line[0] == '\0' || line[0] == '\n' || line[0] == '\r'))
+			continue;
+
+		if (sscanf(line, "%1023s", param) != 1)
+			continue;
+
+		regex = pcre_compile(param, 0, &error, &offset, NULL);
+		if ( regex == NULL ) {
+			ShowError("Could not compile regex '%s'. Error: '%s'.\n", param, error);
+			continue;
+		}
+		extra = pcre_study(regex, 0, &error);
+		if (error != NULL) {
+			ShowError("Could not optimize '%s' Error: '%s'.\n", param, error);
+			continue;
+		}
+
+		RECREATE(mannerlist, struct manner_pcre, mannersize + 1);
+		mannerlist[mannersize].regex = regex;
+		mannerlist[mannersize].extra = extra;
+		++mannersize;
+	}
+	ShowStatus("Done reading '"CL_WHITE"%d"CL_RESET"' entries in '"CL_WHITE"%s"CL_RESET"'.\n", mannersize, confpath);
+	return true;
+}
+
+bool read_manner_config(const char* confpath) {
+	char line[1024], w1[1024], w2[1024];
+	FILE* fp;
+
+	fp = fopen(confpath, "r");
+
+	if (fp == NULL) {
+		ShowError("File not found: '%s' \n", confpath);
+		return false;
+	}
+
+	while(fgets(line, sizeof(line), fp))
+	{
+		if(line[0] == '/' && line[1] == '/')
+			continue;
+
+		if (sscanf(line, "%[^:]: %[^\r\n]", w1, w2) != 2)
+			continue;
+
+		if(!strcmpi(w1, "gm_min_level"))
+			manner_config.min_gm_level = atoi(w2);
+		else if (!strcmpi(w1, "mute_after"))
+			manner_config.mute_after = atoi(w2);
+		else if (!strcmpi(w1, "mute_time"))
+			manner_config.mute_time = atoi(w2);
+		else if (!strcmpi(w1, "bypass_var"))
+			strncpy(manner_config.bypass_var, w2, sizeof(manner_config.bypass_var));
+	}
+
+	ShowStatus("Chat filter configuration has been loaded.\n");
+	return true;
+}
+
+void clean_manner(void) {
+	unsigned int i;
+
+	for (i = 0; i < mannersize; i++) {
+
+		pcre_free(mannerlist[i].regex);
+
+		if (mannerlist[i].extra)
+			pcre_free(mannerlist[i].extra);
+	}
+	aFree(mannerlist);
+	mannerlist = NULL;
+	mannersize = 0;
+}
 
 /// Called when a terminate signal is received.
 void do_shutdown(void)
@@ -4050,6 +4142,7 @@ void do_shutdown(void)
 			mapit_free(iter);
 			flush_fifos();
 		}
+		clean_manner();
 		chrif_check_shutdown();
 	}
 }
@@ -4115,6 +4208,8 @@ int do_init(int argc, char *argv[])
 	script_config_read(SCRIPT_CONF_NAME);
 	inter_config_read(INTER_CONF_NAME);
 	log_config_read(LOG_CONF_NAME);
+	read_manner("conf/plugin/manner.txt");
+	read_manner_config("conf/plugin/manner.conf");
 
 	id_db = idb_alloc(DB_OPT_BASE);
 	pc_db = idb_alloc(DB_OPT_BASE);	//Added for reliable map_id2sd() use. [Skotlex]

@@ -663,6 +663,11 @@ struct map_session_data {
 		int16 icon;
 		int tid;
 	} bonus_script[MAX_PC_BONUS_SCRIPT];
+
+	struct player_manner {
+	int32 mute_times;
+	int32 changed; // when saving time we will compare this to mute_times and if it's not same we will save, i prefered to do this than add another lines to chat filter, it's already busy place.
+	} manner;
 };
 
 enum weapon_type {

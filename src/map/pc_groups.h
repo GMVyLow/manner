@@ -46,7 +46,7 @@ enum e_pc_permission {
 	PC_PERM_CHANNEL_ADMIN       = 0x00200000,
 	PC_PERM_TRADE_BOUNDED       = 0x00400000,
 	PC_PERM_ITEM_UNCONDITIONAL  = 0x00800000,
-	//.. add other here
+	PC_PERM_BYBASS_CHAT         = 0x01000000,
 	PC_PERM_ALLPERMISSION       = 0xFFFFFFFF,
 };
 
@@ -78,6 +78,7 @@ static const struct {
 	{ "channel_operator", PC_PERM_CHANNEL_ADMIN },
 	{ "can_trade_bounded", PC_PERM_TRADE_BOUNDED },
 	{ "item_unconditional", PC_PERM_ITEM_UNCONDITIONAL },
+	{ "bypass_chat_filter", PC_PERM_BYBASS_CHAT},
 	{ "all_permission", PC_PERM_ALLPERMISSION },
 };
 
