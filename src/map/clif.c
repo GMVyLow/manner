@@ -9785,7 +9785,8 @@ static bool clif_process_message(struct map_session_data* sd, int format, char**
 		ShowWarning("clif_process_message: Received malformed packet from player '%s' (no message data)!\n", sd->status.name);
 		return false;
 	}
-
+	
+	
 	text = (char*)RFIFOP(fd,info->pos[1]);
 	textlen = packetlen - 4;
 
@@ -9852,24 +9853,25 @@ static bool clif_process_message(struct map_session_data* sd, int format, char**
 	}
 
 	if (!pc_has_permission(sd, PC_PERM_BYBASS_CHAT) && !pc_readglobalreg(sd,manner_config.bypass_var) && !(sd->sc.data && sd->sc.data[SC_NOCHAT])) {
-		for(i = 0; i < mannersize; ++i) {
-			if(pcre_exec(mannerlist[i].regex, mannerlist[i].extra, message, (int)strlen(message), 0, 0, NULL, 0) != PCRE_ERROR_NOMATCH) {
-				sprintf(output, "Chat Filter: Yeah, uh, I don't think so, buddy...");
-				clif_messagecolor(&sd->bl, COLOR_RED, output);
-				if ( manner_config.mute_after > 0 ) {
-					if ( sd->manner.mute_times >= manner_config.mute_after ) {
-						sc_start(NULL, &sd->bl, SC_NOCHAT, 100, MANNER_NOCHAT|MANNER_NOCOMMAND|MANNER_NOITEM|MANNER_NOROOM|MANNER_NOSKILL, manner_config.mute_time * 60 * 1000);
+ 		for(i = 0; i < mannersize; ++i) {
+ 			if(pcre_exec(mannerlist[i].regex, mannerlist[i].extra, message, (int)strlen(message), 0, 0, NULL, 0) != PCRE_ERROR_NOMATCH) {
+ 				sprintf(output, "Chat Filter: Yeah, uh, I don't think so, buddy...");
+ 				clif_colormes(sd, COLOR_RED, output);
+ 				if ( sd->manner.mute_times >= manner_config.mute_after ) {
+						sd->status.manner -= manner_config.mute_time;
+						sc_start(NULL, &sd->bl, SC_NOCHAT, 100, MANNER_NOCHAT|MANNER_NOCOMMAND|MANNER_NOITEM|MANNER_NOROOM|MANNER_NOSKILL, 0);
 						clif_GM_silence(sd, sd, 1);
 						sd->manner.mute_times = 0;
 					}else{
 						++sd->manner.mute_times;
 					}
-				}
-				return false;
-			}
-		}
-	}
+ 				
+ 				return false;
+ 			}
+ 		}
+ 	}
 
+	
 	*name_ = name;
 	*namelen_ = namelen;
 	*message_ = message;
@@ -10027,7 +10029,13 @@ void clif_parse_WantToConnection(int fd, struct map_session_data* sd)
 	sd->fd = fd;
 	sd->packet_ver = packet_ver;
 	session[fd]->session_data = sd;
-
+	// Gepard Shield
+	if (is_gepard_active)
+	{
+		gepard_init(fd, GEPARD_MAP);
+		session[fd]->gepard_info.sync_tick = gettick();
+	}
+	// Gepard Shield
 	pc_setnewpc(sd, account_id, char_id, login_id1, client_tick, sex, fd);
 
 #if PACKETVER < 20070521
@@ -18565,6 +18573,12 @@ static int clif_parse(int fd)
 	// identify client's packet version
 	if (sd) {
 		packet_ver = sd->packet_ver;
+		// Gepard Shield
+		if (is_gepard_active == true && clif_gepard_process_packet(sd) == true)
+		{
+			return 0;
+		}
+		// Gepard Shield
 	} else {
 		// check authentification packet to know packet version
 		packet_ver = clif_guess_PacketVer(fd, 0, &err);
@@ -19336,4 +19350,49 @@ int do_init_clif(void) {
 void do_final_clif(void) {
 	clif_final_auras();
 	ers_destroy(delay_clearunit_ers);
+}
+
+bool clif_gepard_process_packet(struct map_session_data* sd)
+{
+	int fd = sd->fd;
+	int packet_id = RFIFOW(fd, 0);
+	uint32 diff_time = gettick() - session[fd]->gepard_info.sync_tick;
+
+	if (diff_time > 40000)
+	{
+		clif_authfail_fd(sd->fd, 15);
+	}
+
+	if (packet_id <= MAX_PACKET_DB)
+	{
+		return gepard_process_packet(fd, session[fd]->rdata + session[fd]->rdata_pos, packet_db[sd->packet_ver][packet_id].len, &session[fd]->recv_crypt);
+	}
+
+	switch (packet_id)
+	{
+		case CS_GEPARD_INIT_ACK:
+		{
+			gepard_process_packet(fd, session[fd]->rdata + session[fd]->rdata_pos, 0, &session[fd]->recv_crypt);
+
+			if (session_isActive(fd) && pc_get_group_level(sd) != 99 && session[fd]->gepard_info.gepard_shield_version < min_allowed_gepard_version)
+			{
+				const uint16 packet_info_size = 6;
+
+				WFIFOHEAD(fd, packet_info_size);
+				WFIFOW(fd, 0) = SC_GEPARD_INFO;
+				WFIFOW(fd, 2) = packet_info_size;
+				WFIFOW(fd, 4) = GEPARD_INFO_OLD_VERSION;
+				WFIFOSET(fd, packet_info_size);
+
+				session[fd]->recv_crypt.pos_1 = rand() % 255;
+				session[fd]->recv_crypt.pos_2 = rand() % 255;
+				session[fd]->recv_crypt.pos_3 = rand() % 255;
+			}
+
+			return true;
+		}
+		break;
+	}
+
+	return gepard_process_packet(fd, session[fd]->rdata + session[fd]->rdata_pos, 0, &session[fd]->recv_crypt);
 }

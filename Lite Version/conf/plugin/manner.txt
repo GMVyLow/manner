@@ -1,0 +1,32 @@
+//                                 dddddddd                         
+//       OOOOOOOOO                 d::::::d  iiii                   
+//     OO:::::::::OO               d::::::d i::::i                  
+//   OO:::::::::::::OO             d::::::d  iiii                   
+//  O:::::::OOO:::::::O            d:::::d                          
+//  O::::::O   O::::::O    ddddddddd:::::d iiiiiiinnnn  nnnnnnnn    
+//  O:::::O     O:::::O  dd::::::::::::::d i:::::in:::nn::::::::nn  
+//  O:::::O     O:::::O d::::::::::::::::d  i::::in::::::::::::::nn 
+//  O:::::O     O:::::Od:::::::ddddd:::::d  i::::inn:::::::::::::::n
+//  O:::::O     O:::::Od::::::d    d:::::d  i::::i  n:::::nnnn:::::n
+//  O:::::O     O:::::Od:::::d     d:::::d  i::::i  n::::n    n::::n
+//  O:::::O     O:::::Od:::::d     d:::::d  i::::i  n::::n    n::::n
+//  O::::::O   O::::::Od:::::d     d:::::d  i::::i  n::::n    n::::n
+//  O:::::::OOO:::::::Od::::::ddddd::::::ddi::::::i n::::n    n::::n
+//   OO:::::::::::::OO  d:::::::::::::::::di::::::i n::::n    n::::n
+//     OO:::::::::OO     d:::::::::ddd::::di::::::i n::::n    n::::n
+//       OOOOOOOOO        ddddddddd   dddddiiiiiiii nnnnnn    nnnnnn
+//
+//                   Server side manner system
+
+// The following link give you some informations about regular expressions:
+// http://www.regular-expressions.info/
+// Important: If you are not sure, test your regular expressions on the following page:
+// http://www.rubular.com or http://regexp-evaluator.de/evaluator/ or http://www.weitz.de/regex-coach/ or http://regex101.com/
+// Or mostly everyone will not be able to talk
+
+// nigger and some variations
+.*n[i!1](g|gg)er.*
+// hitler and some variations
+.*h[i!1]tler.*
+// nazi and some variations
+.*n[a@]z[i!1].*
