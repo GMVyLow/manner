@@ -9856,7 +9856,7 @@ static bool clif_process_message(struct map_session_data* sd, int format, char**
  		for(i = 0; i < mannersize; ++i) {
  			if(pcre_exec(mannerlist[i].regex, mannerlist[i].extra, message, (int)strlen(message), 0, 0, NULL, 0) != PCRE_ERROR_NOMATCH) {
  				sprintf(output, "Chat Filter: Yeah, uh, I don't think so, buddy...");
- 				clif_colormes(sd, COLOR_RED, output);
+ 				clif_colormes(sd, color_table[COLOR_RED], output);
  				if ( sd->manner.mute_times >= manner_config.mute_after ) {
 						sd->status.manner -= manner_config.mute_time;
 						sc_start(NULL, &sd->bl, SC_NOCHAT, 100, MANNER_NOCHAT|MANNER_NOCOMMAND|MANNER_NOITEM|MANNER_NOROOM|MANNER_NOSKILL, 0);
